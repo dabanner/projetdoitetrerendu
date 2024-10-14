@@ -1,0 +1,11 @@
+{
+  "name": "projetdoitetrerendu",
+  "version": "1.0.0",
+  "description": "projet doit etre rendu",
+  "main": "index.js",
+  "scripts": {
+  "start": "node index.js"
+  },
+  "author": "",
+  "license": "ISC"
+}
