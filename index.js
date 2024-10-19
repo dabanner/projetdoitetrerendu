@@ -6,11 +6,18 @@ const PORT = 3000;
 
 // Serve static files from the "public" directory
 app.use(express.static(path.join(__dirname, 'public')));
+app.use('/data', express.static(path.join(__dirname, 'data')));
+
 
 // Route to serve the index.html file
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
+
+app.get('/sunburst', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'sunburst', 'sunburst.html'));
+});
+
 
 // Start the server
 app.listen(PORT, () => {
