@@ -8,10 +8,15 @@ const partition = d3.partition().size([2 * Math.PI, radius]);
 fetch('/data/album.json')
     .then(response => response.json())
     .then(data => {
-        const limitedAlbums = data.slice(0, 500);
+        const limitedAlbums = data.slice(0, 1000);
 
-        // Group the limited albums by country.
-        const albumsByCountry = d3.group(limitedAlbums, d => d.country);
+        // Group the limited albums by country, assigning "Unknown" for empty or undefined countries.
+        const albumsByCountry = d3.group(limitedAlbums, d => {
+            if (!d.country) {
+                return "Unknown"; // Assign to "Unknown" if country is not defined
+            }
+            return d.country; // Otherwise, return the actual country
+        });
 
         // Format the data in a hierarchical structure.
         const root = d3.hierarchy({
@@ -20,9 +25,10 @@ fetch('/data/album.json')
                 children: albums.map(album => ({
                     name: album.title,
                     artist: album.name,
-                    value: album.deezerFans || 0,
+                    value: album.deezerFans || 0, // Default value for deezerFans
                     color: "#ccc",
-                    country: album.country
+                    country: album.country || "Unknown", // Assign "Unknown" if country is not defined
+                    cover: album.cover
                 }))
             }))
         })
@@ -81,11 +87,12 @@ fetch('/data/album.json')
                         });
                 })
                 .on("click", (event, d) => {
-                    if (d.depth === 1) {
-                        focusOnCountry(d,d.depth);
-                    }
-                    else if (d.depth === 2) {
-                    displayAlbumInfo(d.data);
+                    console.log("Clicked on:", d.data.name, "Depth:", d.depth);
+                    if (d.children !== undefined) {
+                        focusOnCountry(d, d.depth);
+                    } else {
+                        console.log("Album clicked:", d.data);
+                        displayAlbumInfo(d.data);
                     }
                 });
 
@@ -128,7 +135,6 @@ fetch('/data/album.json')
 
         // Function to focus on a specific country and show its albums.
         function focusOnCountry(d, depth) {
-            console.log("//////////// DEPTH = ", depth);
             const countryAlbums = d.data.children;
 
             // Create a new hierarchy for the selected country.
@@ -160,17 +166,12 @@ fetch('/data/album.json')
             <p>Artist: ${albumData.artist}</p>
             <p>Deezer Fans: ${albumData.value}</p>
             <p>Release Date: ${albumData.dateRelease}</p>
-            <p>Country: ${albumData.country}</p>
-            <p>UPC: ${albumData.upc}</p>
-            <p><a href="${albumData.urlDeezer}" target="_blank">Listen on Deezer</a></p>
-            <p><a href="${albumData.urlMusicBrainz}" target="_blank">More Info on MusicBrainz</a></p>`;
+            <p>Country: ${albumData.country || "Unknown"}</p>
+            `;
 
-                // Show the album info container.
-                albumInfoContainer.style.display = 'block';
+            // Show the album info container.
+            albumInfoContainer.style.display = 'block';
         }
-
-
-
 
         // Initial rendering of the chart with all countries.
         updateChart(currentRoot);
@@ -178,6 +179,3 @@ fetch('/data/album.json')
     .catch(error => {
         console.error('Error loading the JSON data:', error);
     });
-
-
-
