@@ -24,12 +24,30 @@
         .arc:hover {
             fill: rgba(146, 168, 255, 0.68);
         }
+
+        #album-info {
+            margin-top: 20px;
+            text-align: center;
+            display: none;
+        }
+        #album-cover {
+            width: 200px;
+            height: 200px;
+        }
+        h1 {
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 <body>
 <div>
-    <h1>Sunburst Chart of Artists and Genres</h1>
-    <svg width="800" height="800"></svg>
+    <h1>Sunburst Chart</h1>
+    <svg width="1000" height="1000"></svg>
+
+    <div id="album-info">
+        <img id="album-cover" src="" alt="Album Cover">
+        <div id="album-details"></div>
+    </div>
 </div>
 
     <script src="https://d3js.org/d3.v7.min.js"></script>
