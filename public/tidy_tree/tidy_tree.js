@@ -26,17 +26,14 @@ fetch( "/data/artist-without-members.json")
     const genreToFind = "J-Rock";
     const relatedArtists = getArtistsByGenre(artistsData, genreToFind);
     
-    console.log(uniqueGenres);
     
-    // Display the result
-    console.log(`Artists related to ${genreToFind}:`);
     relatedArtists.forEach(artist => {
       console.log(`- ${artist.name} (ID: ${artist.id_artist_deezer})`);
     });
   const uniqueGenresArray = Array.from(uniqueGenres);
 
-  const data = {
-    name: genreToFind, // Main genre name
+  var treeData = [{
+    name: "Genres", 
     children: uniqueGenresArray
         .map(genre => {
             const artists = getArtistsByGenre(artistsData, genre); // Get artists for the genre
@@ -50,90 +47,138 @@ fetch( "/data/artist-without-members.json")
                 : null; // Return null for genres with no artists
         })
         .filter(genreNode => genreNode !== null), // Filter out the null values
-};
+    }];
 
-    const width = 928;
+  // ************** Generate the tree diagram	 *****************
+  var margin = {top: 20, right: 120, bottom: 20, left: 120},
+    width = 960 - margin.right - margin.left,
+    height = 500 - margin.top - margin.bottom;
+    
+  var i = 0,
+    duration = 750,
+    root;
 
-    // Compute the tree height; this approach will allow the height of the
-    // SVG to scale according to the breadth (width) of the tree layout.
-    const root = d3.hierarchy(data);
-    const dx = 10;
-    const dy = width / (root.height + 1);
+  var tree = d3.layout.tree()
+    .size([height, width]);
 
-    // Create a tree layout.
-    const tree = d3.tree().nodeSize([dx, dy]);
+  var diagonal = d3.svg.diagonal()
+    .projection(function(d) { return [d.y, d.x]; });
 
-    // Sort the tree and apply the layout.
-    root.sort((a, b) => d3.ascending(a.data.name, b.data.name));
-    tree(root);
+  var svg = d3.select("body").append("svg")
+    .attr("width", width + margin.right + margin.left)
+    .attr("height", height + margin.top + margin.bottom)
+    .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-    // Compute the extent of the tree. Note that x and y are swapped here
-    // because in the tree layout, x is the breadth, but when displayed, the
-    // tree extends right rather than down.
-    let x0 = Infinity;
-    let x1 = -x0;
-    root.each(d => {
-    if (d.x > x1) x1 = d.x;
-    if (d.x < x0) x0 = d.x;
+  root = treeData[0];
+  root.children.forEach(function(d) { d._children = d.children; d.children = null; });
+
+  
+  root.x0 = height / 2;
+  root.y0 = 0;
+    
+  update(root);
+  
+
+  d3.select(self.frameElement).style("height", "500px");
+
+  function update(source) {
+    // Compute the new tree layout.
+    var nodes = tree.nodes(root).reverse(),
+      links = tree.links(nodes);
+
+    // Normalize for fixed-depth.
+    nodes.forEach(function(d) { d.y = d.depth * 180;});
+
+
+    // Update the nodes…
+    var node = svg.selectAll("g.node")
+      .data(nodes, function(d) { return d.id || (d.id = ++i); });
+
+    // Enter any new nodes at the parent's previous position.
+    var nodeEnter = node.enter().append("g")
+      .attr("class", "node")
+      .attr("transform", function(d) { return "translate(" + source.y0 + "," + source.x0 + ")"; })
+      .on("click", click);
+
+    nodeEnter.append("circle")
+      .attr("r", 1e-6)
+      .style("fill", function(d) { return d._children ? "lightsteelblue" : "#fff"; });
+      
+
+    nodeEnter.append("text")
+      .attr("x", function(d) { return d.children || d._children ? -13 : 13; })
+      .attr("dy", ".35em")
+      .attr("text-anchor", function(d) { return d.children || d._children ? "end" : "start"; })
+      .text(function(d) { return d.name; })
+      .style("fill-opacity", 1e-6);
+
+    // Transition nodes to their new position.
+    var nodeUpdate = node.transition()
+      .duration(duration)
+      .attr("transform", function(d) { return "translate(" + d.y + "," + d.x + ")"; });
+
+    nodeUpdate.select("circle")
+      .attr("r", 10)
+      .style("fill", function(d) { return d._children ? "lightsteelblue" : "#fff"; });
+
+    nodeUpdate.select("text")
+      .style("fill-opacity", 1);
+
+    // Transition exiting nodes to the parent's new position.
+    var nodeExit = node.exit().transition()
+      .duration(duration)
+      .attr("transform", function(d) { return "translate(" + source.y + "," + source.x + ")"; })
+      .remove();
+
+    nodeExit.select("circle")
+      .attr("r", 1e-6);
+
+    nodeExit.select("text")
+      .style("fill-opacity", 1e-6);
+
+    // Update the links…
+    var link = svg.selectAll("path.link")
+      .data(links, function(d) { return d.target.id; });
+
+    // Enter any new links at the parent's previous position.
+    link.enter().insert("path", "g")
+      .attr("class", "link")
+      .attr("d", function(d) {
+      var o = {x: source.x0, y: source.y0};
+      return diagonal({source: o, target: o});
+      });
+
+    // Transition links to their new position.
+    link.transition()
+      .duration(duration)
+      .attr("d", diagonal);
+
+    // Transition exiting nodes to the parent's new position.
+    link.exit().transition()
+      .duration(duration)
+      .attr("d", function(d) {
+      var o = {x: source.x+30, y: source.y};
+      return diagonal({source: o, target: o});
+      })
+      .remove();
+
+    // Stash the old positions for transition.
+    nodes.forEach(function(d) {
+    d.x0 = d.x;
+    d.y0 = d.y;
     });
+  }
 
-    // Compute the adjusted height of the tree.
-    const height = x1 - x0 + dx * 2;
-
-    // Create the SVG element and append it to the body
-    const svg = d3.select("body")
-        .append("svg")
-        .attr("width", width)
-        .attr("height", height)
-        .attr("viewBox", [-dy / 3, x0 - dx, width, height])
-        .attr("style", "max-width: 100%; height: auto; font: 10px sans-serif;");
-
-    const link = svg.append("g")
-        .attr("fill", "none")
-        .attr("stroke", "#555")
-        .attr("stroke-opacity", 0.4)
-        .attr("stroke-width", 1.5)
-    .selectAll()
-        .data(root.links())
-        .join("path")
-        .attr("d", d3.linkHorizontal()
-            .x(d => d.y)
-            .y(d => d.x));
-
-    const node = svg.append("g")
-        .attr("stroke-linejoin", "round")
-        .attr("stroke-width", 3)
-    .selectAll()
-    .data(root.descendants())
-    .join("g")
-        .attr("transform", d => `translate(${d.y},${d.x})`);
-
-    node.append("circle")
-        .attr("fill", d => d.children ? "#555" : "#999")
-        .attr("r", 2.5);
-
-    node.append("text")
-        .attr("dy", "0.31em")
-        .attr("x", d => d.children ? -6 : 6)
-        .attr("text-anchor", d => d.children ? "end" : "start")
-        .text(d => d.data.name)
-        .attr("stroke", "white")
-        .attr("paint-order", "stroke");
-
-
-})
-.catch(error => {
-  console.error("There was a problem with the fetch operation:", error);
-});
-
-Plot.plot({
-    axis: null,
-    margin: 10,
-    marginLeft: 40,
-    marginRight: 160,
-    width: 928,
-    height: 1800,
-    marks: [
-        Plot.tree(flare, {path: "name", delimiter: "."})
-    ]
-    })
+  // Toggle children on click.
+  function click(d) {
+    if (d.children) {
+    d._children = d.children;
+    d.children = null;
+    } else {
+    d.children = d._children;
+    d._children = null;
+    }
+    update(d);
+  }
+  })
