@@ -1,21 +1,38 @@
 const width = 800;
 const radius = width / 2;
 
-// Set up the partition layout.
-const partition = d3.partition().size([2 * Math.PI, radius]);
+
+// Set up the partition layout with a logarithmic y-scale
+const partition = d3.partition()
+    .size([2 * Math.PI, radius]);
 
 // Fetch the data and process it to group albums by country.
 fetch('/data/album.json')
     .then(response => response.json())
     .then(data => {
-        const limitedAlbums = data.slice(0, 1000);
+        const limitedAlbums = data.slice(0, 4000);
 
         // Group the limited albums by country, assigning "Unknown" for empty or undefined countries.
-        const albumsByCountry = d3.group(limitedAlbums, d => {
-            if (!d.country) {
-                return "Unknown"; // Assign to "Unknown" if country is not defined
-            }
-            return d.country; // Otherwise, return the actual country
+        const albumsByCountry = d3.group(limitedAlbums, d => d.country || "Unknown");
+
+        // Create checkboxes for each unique country
+        const countryCheckboxesContainer = document.getElementById("country-checkboxes");
+        Array.from(albumsByCountry.keys()).forEach(country => {
+            const container = document.createElement("div");
+            container.classList.add("checkbox-container");
+
+            const checkbox = document.createElement("input");
+            checkbox.type = "checkbox";
+            checkbox.value = country;
+            checkbox.checked = false;
+            checkbox.addEventListener("change", updateChart);
+
+            const label = document.createElement("label");
+            label.textContent = country;
+
+            container.appendChild(checkbox);
+            container.appendChild(label);
+            countryCheckboxesContainer.appendChild(container);
         });
 
         // Format the data in a hierarchical structure.
@@ -25,9 +42,9 @@ fetch('/data/album.json')
                 children: albums.map(album => ({
                     name: album.title,
                     artist: album.name,
-                    value: album.deezerFans || 0, // Default value for deezerFans
+                    value: album.deezerFans || 0,
                     color: "#ccc",
-                    country: album.country || "Unknown", // Assign "Unknown" if country is not defined
+                    country: album.country || "Unknown",
                     cover: album.cover
                 }))
             }))
@@ -36,8 +53,6 @@ fetch('/data/album.json')
             .sort((a, b) => b.value - a.value);
 
         partition(root);
-
-        // Store the root so we can reset to the full view.
         let currentRoot = root;
 
         // Create the SVG container.
@@ -47,24 +62,33 @@ fetch('/data/album.json')
             .append("g")
             .attr("transform", `translate(${width / 2},${width / 2})`);
 
-        // Define the arc generator.
         const arc = d3.arc()
             .startAngle(d => d.x0)
             .endAngle(d => d.x1)
             .innerRadius(d => d.y0)
             .outerRadius(d => d.y1);
 
-        // Create a function to update the chart with new data.
-        function updateChart(root) {
-            const path = svg.selectAll("path")
-                .data(root.descendants(), d => d.data.name);
+        // Function to update the chart with selected countries
+        function updateChart() {
+            const selectedCountries = Array.from(document.querySelectorAll("#country-checkboxes input:checked"))
+                .map(checkbox => checkbox.value);
 
-            // Update existing paths.
+            // Filter albums based on selected countries
+            const filteredData = root.data.children.filter(d => selectedCountries.includes(d.name));
+            const filteredRoot = d3.hierarchy({ children: filteredData })
+                .sum(d => d.value)
+                .sort((a, b) => b.value - a.value);
+
+            partition(filteredRoot);
+
+            // Update paths with the filtered data
+            const path = svg.selectAll("path")
+                .data(filteredRoot.descendants(), d => d.data.name);
+
             path.transition()
                 .duration(750)
                 .attr("d", arc);
 
-            // Enter new paths.
             path.enter().append("path")
                 .attr("d", arc)
                 .attr("fill", d => {
@@ -73,36 +97,29 @@ fetch('/data/album.json')
                 })
                 .attr("stroke", "black")
                 .attr("stroke-width", 1)
-                .on("mouseover", function (event, d) {
-                    // Change fill color on hover.
-                    d3.select(this)
-                        .attr("fill", "orange"); // Change to the desired hover color.
+                .on("mouseover", function () {
+                    d3.select(this).attr("fill", "orange");
                 })
                 .on("mouseout", function (event, d) {
-                    // Reset the fill color when mouse leaves.
-                    d3.select(this)
-                        .attr("fill", d => {
-                            while (d.depth > 1) d = d.parent;
-                            return d.data.color || '#c0c8cb'; // Reset to the original color.
-                        });
+                    d3.select(this).attr("fill", d => {
+                        while (d.depth > 1) d = d.parent;
+                        return d.data.color || '#c0c8cb';
+                    });
                 })
                 .on("click", (event, d) => {
-                    console.log("Clicked on:", d.data.name, "Depth:", d.depth);
-                    if (d.children !== undefined) {
+                    if (d.children) {
                         focusOnCountry(d, d.depth);
                     } else {
-                        console.log("Album clicked:", d.data);
                         displayAlbumInfo(d.data);
                     }
                 });
 
-            // Remove old paths.
             path.exit().remove();
 
-            // Add labels for countries and albums.
             const label = svg.selectAll("text")
-                .data(root.descendants(), d => d.data.name);
+                .data(filteredRoot.descendants(), d => d.data.name);
 
+            const minAngle = 0.8 * Math.PI / 180;
             label.transition()
                 .duration(750)
                 .attr("transform", d => {
@@ -111,12 +128,15 @@ fetch('/data/album.json')
                 })
                 .attr("text-anchor", "middle")
                 .text(d => {
-                    return d.depth === 1 ? `${d.data.name}` : (d.depth === 2 ? `${d.data.name} - ${d.data.artist}` : '');
+                    const angle = d.x1 - d.x0;
+                    if (angle >= minAngle) {
+                        return d.depth === 1 ? d.data.name : (d.depth === 2 ? `${d.data.name} - ${d.data.artist}` : '');
+                    }
+                    return '';
                 })
                 .style("font-size", "10px")
                 .style("fill", "#000");
 
-            // Enter new labels.
             label.enter().append("text")
                 .attr("transform", d => {
                     const angle = (d.x0 + d.x1) / 2;
@@ -124,58 +144,44 @@ fetch('/data/album.json')
                 })
                 .attr("text-anchor", "middle")
                 .text(d => {
-                    return d.depth === 1 ? `${d.data.name}` : (d.depth === 2 ? `${d.data.name} - ${d.data.artist}` : '');
+                    const angle = d.x1 - d.x0;
+                    if (angle >= minAngle) {
+                        return d.depth === 1 ? d.data.name : (d.depth === 2 ? `${d.data.name} - ${d.data.artist}` : '');
+                    }
+                    return '';
                 })
                 .style("font-size", "10px")
                 .style("fill", "#000");
 
-            // Remove old labels.
             label.exit().remove();
         }
 
-        // Function to focus on a specific country and show its albums.
-        function focusOnCountry(d, depth) {
-            const countryAlbums = d.data.children;
-
-            // Create a new hierarchy for the selected country.
-            const countryRoot = d3.hierarchy({
-                name: d.data.name,
-                children: countryAlbums
-            })
-                .sum(d => d.value)
-                .sort((a, b) => b.value - a.value);
-
-            partition(countryRoot);
-
-            // Update the chart with the new country-focused hierarchy.
-            updateChart(countryRoot);
-        }
-
         function displayAlbumInfo(albumData) {
-            // Update the album cover image and details.
             const albumInfoContainer = document.getElementById('album-info');
             const albumCover = document.getElementById('album-cover');
             const albumDetails = document.getElementById('album-details');
-
-            // Update album cover with available image size, using 'standard' by default
-            albumCover.src = albumData.cover ? albumData.cover.standard : 'default-cover.jpg'; // Provide a default image if none is available
-
-            // Update the album details (title, artist, fans, release date, etc.).
+            albumCover.src = albumData.cover ? albumData.cover.standard : 'default-cover.jpg';
             albumDetails.innerHTML = `
-            <h3>${albumData.name}</h3>
-            <p>Artist: ${albumData.artist}</p>
-            <p>Deezer Fans: ${albumData.value}</p>
-            <p>Release Date: ${albumData.dateRelease}</p>
-            <p>Country: ${albumData.country || "Unknown"}</p>
-            `;
-
-            // Show the album info container.
+                        <h3>${albumData.name}</h3>
+                        <p>Artist: ${albumData.artist}</p>
+                        <p>Deezer Fans: ${albumData.value}</p>
+                        <p>Release Date: ${albumData.dateRelease}</p>
+                        <p>Country: ${albumData.country || "Unknown"}</p>
+                    `;
             albumInfoContainer.style.display = 'block';
+
+            //Button to close the album info container
+            const closeButton = document.getElementById('album-info-close');
+            closeButton.addEventListener('click', () => {
+                albumInfoContainer.style.display = 'none';
+            });
+
+
+
         }
 
-        // Initial rendering of the chart with all countries.
-        updateChart(currentRoot);
+        updateChart();
+
+
     })
-    .catch(error => {
-        console.error('Error loading the JSON data:', error);
-    });
+    .catch(error => console.error('Error loading the JSON data:', error));

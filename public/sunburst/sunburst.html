@@ -8,13 +8,13 @@
         body {
             font-family: Arial, sans-serif;
             display: flex;
-            justify-content: center;
+            flex-direction: column;
             align-items: center;
             height: 100vh;
             margin: 0;
         }
-        div{
-            justify-content: center;
+        #controls {
+            margin-bottom: 20px;
         }
         .arc {
             cursor: pointer;
@@ -24,16 +24,14 @@
         .arc:hover {
             fill: rgba(146, 168, 255, 0.68);
         }
-
         #album-info {
-            position: absolute; /* Make it position absolute */
-            right: 20px; /* Adjust as needed */
-            top: 20px; /* Adjust as needed */
+            position: relative;
+            right: 20px;
+            top: 20px;
             text-align: left;
-            display: none; /* Keep this if you want to hide it initially */
-            width: 300px; /* Set a width for the album info */
+            display: none;
+            width: 300px;
         }
-
         #album-cover {
             width: 200px;
             height: 200px;
@@ -41,20 +39,56 @@
         h1 {
             margin-bottom: 10px;
         }
+        #country-checkboxes {
+            display: flex;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        .checkbox-container {
+            margin-right: 10px;
+        }
+        .encloser {
+            width: 100%;
+            display: flex;
+            flex-direction: row;
+            justify-content: space-around;
+            align-items: center;
+            position: relative;
+            margin-left: 2rem;
+            margin-right: 2rem;
+        }
+
+        #album-info-close {
+            position: absolute;
+            top: 5px;
+            cursor: pointer;
+            padding: 5px;
+            margin: 0;
+            background-color: #ff0000;
+            color: #fff;
+            border: none;
+            border-radius: 3px;
+        }
+
     </style>
 </head>
 <body>
-<div>
+<div id="controls">
     <h1>Sunburst Chart</h1>
+    <div id="country-checkboxes"></div>
+</div>
+<div class="encloser">
     <svg width="1000" height="1000"></svg>
 
     <div id="album-info">
+        <div id="album-info-close">X</div>
         <img id="album-cover" src="" alt="Album Cover">
         <div id="album-details"></div>
     </div>
 </div>
 
-    <script src="https://d3js.org/d3.v7.min.js"></script>
-    <script src="SunburstChart.js"></script>
+
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script src="SunburstChart.js"></script>
 </body>
 </html>
