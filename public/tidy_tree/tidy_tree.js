@@ -1,47 +1,59 @@
-fetch( "/data/artist-without-members.json")
-  .then(response => {
-    // Ensure the response is in JSON format
+Promise.all([
+  fetch("/data/filtered_artists.json").then(response => {
+    if (!response.ok) {
+      throw new Error("Network response was not ok");
+    }
+    return response.json();
+  }),
+  fetch("/data/album.json").then(response => {
     if (!response.ok) {
       throw new Error("Network response was not ok");
     }
     return response.json();
   })
-  .then(artistsData => {    
+])
+.then(([artistsData, albumsData]) => {
+    artistsData = artistsData.artists
     // Function to get artists by genre
-    function getArtistsByGenre(data, genre) {
-      return data.filter(artist => artist.genres.includes(genre));
+    function getArtistsByGenre(genre) {
+      return artistsData.filter(artist => artist.genres.includes(genre));
     }
 
+    function getArtistAlbums(artist) {      
+      return artistsData
+        .filter(a => a.name === artist.name)  // Filter artists by name
+        .flatMap(a => a.albums.map(album => ({  // Flatten the albums array
+          name: album
+        })));
+    }
+    
     const uniqueGenres = new Set();
 
-    // Iterate through each artist and their genres
     artistsData.forEach(artist => {
-      if (artist.dbp_genre) {
-        artist.dbp_genre.forEach(genre => {
-          uniqueGenres.add(genre);
-        });
-      }
+      console.log(artist);      
+      artist.genres.forEach(genre => uniqueGenres.add(genre));
     });
+  
 
-    const genreToFind = "J-Rock";
-    const relatedArtists = getArtistsByGenre(artistsData, genreToFind);
     
     
-    relatedArtists.forEach(artist => {
-      console.log(`- ${artist.name} (ID: ${artist.id_artist_deezer})`);
-    });
   const uniqueGenresArray = Array.from(uniqueGenres);
 
   var treeData = [{
     name: "Genres", 
     children: uniqueGenresArray
         .map(genre => {
-            const artists = getArtistsByGenre(artistsData, genre); // Get artists for the genre
+            const artists = getArtistsByGenre(genre); // Get artists for the genre            
+            if(artists.length>0){
+              console.log(artists[0]);
+            }
+            
             return artists.length > 0 // Only include genres with artists
                 ? {
                       name: genre,
-                      children: artists.map(artist => ({
+                      children: artists.map(artist => ({                          
                           name: artist.name,
+                          children: getArtistAlbums(artist)
                       })),
                   }
                 : null; // Return null for genres with no artists
@@ -50,9 +62,9 @@ fetch( "/data/artist-without-members.json")
     }];
 
   // ************** Generate the tree diagram	 *****************
-  var margin = {top: 20, right: 120, bottom: 20, left: 120},
-    width = 960 - margin.right - margin.left,
-    height = 500 - margin.top - margin.bottom;
+  var margin = {top: 2, right: 120, bottom: 20, left: 120},
+    width = 6000 - margin.right - margin.left,
+    height = 15000 - margin.top - margin.bottom;
     
   var i = 0,
     duration = 750,
@@ -71,7 +83,20 @@ fetch( "/data/artist-without-members.json")
     .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
   root = treeData[0];
-  root.children.forEach(function(d) { d._children = d.children; d.children = null; });
+  function removeChildren(node) {
+    if (node.children) {
+        node._children = node.children; // Store immediate children
+        node.children = null; // Remove immediate children
+
+        // Recursively remove children from all descendants
+        node._children.forEach(removeChildren);
+    }
+  }
+
+  // Apply to root
+  root.children.forEach(removeChildren);
+
+
 
   
   root.x0 = height / 2;
@@ -108,7 +133,7 @@ fetch( "/data/artist-without-members.json")
 
     nodeEnter.append("text")
       .attr("x", function(d) { return d.children || d._children ? -13 : 13; })
-      .attr("dy", ".35em")
+      .attr("dy", ".350em")
       .attr("text-anchor", function(d) { return d.children || d._children ? "end" : "start"; })
       .text(function(d) { return d.name; })
       .style("fill-opacity", 1e-6);
