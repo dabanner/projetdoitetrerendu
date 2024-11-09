@@ -13,10 +13,6 @@ app.get('/', (req, res) => {
 });
 
 
-app.get('/los-mappos', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'los-mappos', 'index.html'));
-});
-
 // Start the server
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);

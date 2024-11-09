@@ -4,14 +4,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>French Hip Hop Artists Map</title>
+    <title>Music Genre Distribution Map</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 
 <body>
     <div class="container">
-        <h1>French Hip Hop Artists Map</h1>
-        <div id="map"></div>
+        <aside class="sidebar">
+            <h2>Music Genres</h2>
+            <ul id="genre-list"></ul>
+        </aside>
+        <main class="main-content">
+            <h1 id="selected-genre">Select a Genre</h1>
+            <div id="map"></div>
+        </main>
     </div>
     <script src="https://d3js.org/d3.v6.min.js"></script>
     <script src="https://d3js.org/topojson.v3.min.js"></script>
