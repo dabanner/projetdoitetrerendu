@@ -63,7 +63,7 @@ Promise.all([
 
   // ************** Generate the tree diagram	 *****************
   var margin = {top: 2, right: 120, bottom: 20, left: 120},
-    width = 6000 - margin.right - margin.left,
+    width = 9000 - margin.right - margin.left,
     height = 15000 - margin.top - margin.bottom;
     
   var i = 0,
@@ -113,7 +113,7 @@ Promise.all([
       links = tree.links(nodes);
 
     // Normalize for fixed-depth.
-    nodes.forEach(function(d) { d.y = d.depth * 180;});
+    nodes.forEach(function(d) { d.y = d.depth * 300;});
 
 
     // Update the nodes…
@@ -127,7 +127,7 @@ Promise.all([
       .on("click", click);
 
     nodeEnter.append("circle")
-      .attr("r", 1e-6)
+      .attr("r", 1e-2)
       .style("fill", function(d) { return d._children ? "lightsteelblue" : "#fff"; });
       
 
