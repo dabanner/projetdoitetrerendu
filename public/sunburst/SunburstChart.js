@@ -1,13 +1,25 @@
 const width = 800;
 const radius = width / 2;
 
+// Define a custom pastel color scale
+const pastelColors = [
+    "#FFB3BA", "#FFDFBA", "#FFFFBA", "#BAFFC9", "#BAE1FF",
+    "#D4A5A5", "#D4C6A5", "#D4D4A5", "#A5D4B5", "#A5B5D4"
+];
+
+const colorScale = d3.scaleOrdinal(pastelColors);
+
+function getColor(d) {
+    while (d.depth > 1) d = d.parent;
+    return colorScale(d.data.name) || '#ccc';
+}
 
 // Set up the partition layout with a logarithmic y-scale
 const partition = d3.partition()
     .size([2 * Math.PI, radius]);
 
 // Fetch the data and process it to group albums by country.
-fetch('/data/album.json')
+fetch('/data/updated_album.json')
     .then(response => response.json())
     .then(data => {
         const limitedAlbums = data.slice(0, 4000);
@@ -36,9 +48,10 @@ fetch('/data/album.json')
         });
 
         // Format the data in a hierarchical structure.
-        const root = d3.hierarchy({
-            children: Array.from(albumsByCountry, ([country, albums]) => ({
-                name: country,
+        const albumsByArtist = Array.from(albumsByCountry, ([country, albums]) => ({
+            name: country,
+            children: Array.from(d3.group(albums, d => d.name), ([artist, albums]) => ({
+                name: artist,
                 children: albums.map(album => ({
                     name: album.title,
                     artist: album.name,
@@ -48,7 +61,10 @@ fetch('/data/album.json')
                     cover: album.cover
                 }))
             }))
-        })
+        }));
+
+        // Create the hierarchical data structure.
+        const root = d3.hierarchy({ children: albumsByArtist })
             .sum(d => d.value)
             .sort((a, b) => b.value - a.value);
 
@@ -74,7 +90,7 @@ fetch('/data/album.json')
                 .map(checkbox => checkbox.value);
 
             // Filter albums based on selected countries
-            const filteredData = root.data.children.filter(d => selectedCountries.includes(d.name));
+            const filteredData = currentRoot.data.children.filter(d => selectedCountries.includes(d.name));
             const filteredRoot = d3.hierarchy({ children: filteredData })
                 .sum(d => d.value)
                 .sort((a, b) => b.value - a.value);
@@ -87,30 +103,31 @@ fetch('/data/album.json')
 
             path.transition()
                 .duration(750)
-                .attr("d", arc);
+                .attr("d", arc)
+                .attr("fill", d => getColor(d));
 
+            // Updated click handler inside path.enter().append("path") section
             path.enter().append("path")
                 .attr("d", arc)
-                .attr("fill", d => {
-                    while (d.depth > 1) d = d.parent;
-                    return d.data.color || '#c0c8cb';
-                })
+                .attr("fill", d => getColor(d))
                 .attr("stroke", "black")
                 .attr("stroke-width", 1)
                 .on("mouseover", function () {
                     d3.select(this).attr("fill", "orange");
                 })
                 .on("mouseout", function (event, d) {
-                    d3.select(this).attr("fill", d => {
-                        while (d.depth > 1) d = d.parent;
-                        return d.data.color || '#c0c8cb';
-                    });
+                    d3.select(this).attr("fill", getColor(d));
                 })
                 .on("click", (event, d) => {
+                    // Ignore clicks on artist arcs (depth 2) and above
+                    if (d.depth === 2) {
+                        return; // Don't do anything if it's an artist arc
+                    }
+
                     if (d.children) {
-                        focusOnCountry(d, d.depth);
+                        return;  // Focus on the selected country or higher level
                     } else {
-                        displayAlbumInfo(d.data);
+                        displayAlbumInfo(d.data);  // Display album info if it's a leaf node (album)
                     }
                 });
 
@@ -130,7 +147,13 @@ fetch('/data/album.json')
                 .text(d => {
                     const angle = d.x1 - d.x0;
                     if (angle >= minAngle) {
-                        return d.depth === 1 ? d.data.name : (d.depth === 2 ? `${d.data.name} - ${d.data.artist}` : '');
+                        if (d.depth === 1) {
+                            return d.data.name; // Country name
+                        } else if (d.depth === 2) {
+                            return `${d.data.name}`; // Artist name
+                        } else if (d.depth === 3) {
+                            return d.data.name; // Album title
+                        }
                     }
                     return '';
                 })
@@ -146,7 +169,7 @@ fetch('/data/album.json')
                 .text(d => {
                     const angle = d.x1 - d.x0;
                     if (angle >= minAngle) {
-                        return d.depth === 1 ? d.data.name : (d.depth === 2 ? `${d.data.name} - ${d.data.artist}` : '');
+                        return d.depth === 1 ? d.data.name : (d.depth === 2 ? `${d.data.name}` : d.data.name);
                     }
                     return '';
                 })
@@ -175,13 +198,8 @@ fetch('/data/album.json')
             closeButton.addEventListener('click', () => {
                 albumInfoContainer.style.display = 'none';
             });
-
-
-
         }
 
         updateChart();
-
-
     })
     .catch(error => console.error('Error loading the JSON data:', error));
