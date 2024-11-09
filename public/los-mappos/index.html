@@ -1,12 +1,75 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
-    <script src="https://d3js.org/d3.v5.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>J-Rock Artists Map</title>
+    <style>
+        #map {
+            width: 1000px;
+            height: 600px;
+        }
+
+        .country {
+            fill: #ccc;
+            stroke: #fff;
+            stroke-width: 0.5px;
+        }
+    </style>
 </head>
 
 <body>
-    <script src="los-mappos.js"></script>
+    <div id="map"></div>
+
+    <script src="https://d3js.org/d3.v6.min.js"></script>
+    <script src="https://d3js.org/topojson.v3.min.js"></script>
+    <script>
+        async function drawMap(jsonData) {
+            // Filter data for 'J-Rock' genre
+            const jRockArtists = jsonData
+                .find(genre => genre.name === 'French Hip Hop')
+                .artists.reduce((acc, artist) => {
+                    acc[artist.location] = (acc[artist.location] || 0) + 1;
+                    return acc;
+                }, {});
+
+            // Load world map data
+            const worldMap = await fetch('https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world.geojson').then(response => response.json());
+
+            // Draw the map
+            const svg = d3.select('#map').append('svg')
+                .attr('width', 1000)
+                .attr('height', 600);
+
+            const projection = d3.geoMercator()
+                .scale(150)
+                .translate([500, 300]);
+
+            const path = d3.geoPath().projection(projection);
+
+            svg.selectAll('.country')
+                .data(worldMap.features)
+                .enter().append('path')
+                .attr('class', 'country')
+                .attr('d', path)
+                .style("stroke", "black")
+                .style("opacity", 1)
+                .style('fill', d => {
+                    const countryName = d.properties.name;
+                    const artistCount = jRockArtists[countryName] || 0;
+                    const colorScale = d3.scaleSequential(d3.interpolateOranges)
+                        .domain([0, d3.max(Object.values(jRockArtists))]);
+                    return colorScale(artistCount);
+                });
+        }
+
+        // Fetch your JSON data and draw the map
+        fetch('./genres.json')
+            .then(response => response.json())
+            .then(jsonData => drawMap(jsonData))
+            .catch(error => console.error(error));
+    </script>
 </body>
 
 </html>
