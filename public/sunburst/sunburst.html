@@ -8,13 +8,17 @@
         body {
             font-family: Arial, sans-serif;
             display: flex;
-            flex-direction: column;
-            align-items: center;
+            flex-direction: row;
+            align-items: flex-start;
             height: 100vh;
             margin: 0;
         }
         #controls {
-            margin-bottom: 20px;
+            width: 200px;
+            padding: 20px;
+            border-right: 1px solid #ccc;
+            overflow-y: auto;
+            height: 100vh;
         }
         .arc {
             cursor: pointer;
@@ -25,12 +29,15 @@
             fill: rgba(146, 168, 255, 0.68);
         }
         #album-info {
-            position: relative;
+            position: absolute;
             right: 20px;
             top: 20px;
             text-align: left;
             display: none;
             width: 300px;
+            background-color: #fff;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
         }
         #album-cover {
             width: 200px;
@@ -41,26 +48,25 @@
         }
         #country-checkboxes {
             display: flex;
-            flex-wrap: wrap;
-            margin-bottom: 20px;
+            flex-direction: column;
         }
         .checkbox-container {
-            margin-right: 10px;
+            margin-bottom: 10px;
         }
         .encloser {
-            width: 100%;
+            width: calc(100%);
             display: flex;
-            flex-direction: row;
-            justify-content: space-around;
+            flex-direction: column;
+            justify-content: center;
             align-items: center;
             position: relative;
             margin-left: 2rem;
             margin-right: 2rem;
         }
-
         #album-info-close {
             position: absolute;
             top: 5px;
+            right: 5px;
             cursor: pointer;
             padding: 5px;
             margin: 0;
@@ -69,7 +75,6 @@
             border: none;
             border-radius: 3px;
         }
-
     </style>
 </head>
 <body>
@@ -79,14 +84,12 @@
 </div>
 <div class="encloser">
     <svg width="1000" height="1000"></svg>
-
     <div id="album-info">
         <div id="album-info-close">X</div>
         <img id="album-cover" src="" alt="Album Cover">
         <div id="album-details"></div>
     </div>
 </div>
-
 
 <script src="https://d3js.org/d3.v7.min.js"></script>
 <script src="SunburstChart.js"></script>

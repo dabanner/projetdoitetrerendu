@@ -27,9 +27,12 @@ fetch('/data/updated_album.json')
         // Group the limited albums by country, assigning "Unknown" for empty or undefined countries.
         const albumsByCountry = d3.group(limitedAlbums, d => d.country || "Unknown");
 
+        // Sort countries by name
+        const sortedCountries = Array.from(albumsByCountry.keys()).sort();
+
         // Create checkboxes for each unique country
         const countryCheckboxesContainer = document.getElementById("country-checkboxes");
-        Array.from(albumsByCountry.keys()).forEach(country => {
+        sortedCountries.forEach(country => {
             const container = document.createElement("div");
             container.classList.add("checkbox-container");
 
