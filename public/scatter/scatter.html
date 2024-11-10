@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Nuage de Points - Popularité vs Année de Sortie</title>
+    <style>
+        .container {
+            display: flex;
+            align-items: flex-start;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+        }
+
+        .sidebar {
+            flex: 1;
+            max-width: 200px;
+            padding-right: 20px;
+            border-right: 1px solid #ccc;
+        }
+
+        .chart-container {
+            flex: 3;
+            padding-left: 20px;
+        }
+
+        .checkbox-container {
+            display: flex;
+            flex-direction: column;
+        }
+        .checkbox-container label {
+            margin-bottom: 8px;
+        }
+
+        .point {
+            fill-opacity: 0.7;
+            stroke: #333;
+            stroke-width: 1px;
+        }
+
+        .axis-label {
+            font-size: 14px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar pour les cases à cocher -->
+        <div class="sidebar">
+            <h3>Filtrer par années</h3>
+            <div class="checkbox-container" id="checkboxes"></div>
+        </div>
+
+        <!-- Conteneur pour le graphique -->
+        <div class="chart-container" id="scatter-plot"></div>
+    </div>
+
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="scatterPlot.js"></script>
+</body>
+</html>
