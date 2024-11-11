@@ -1,4 +1,4 @@
-fetch("/data/filtered_artists.json").then(response => {
+fetch("/data/genres-artists-albums.json").then(response => {
   if (!response.ok) {
     throw new Error("Network response was not ok");
   }
@@ -22,7 +22,6 @@ fetch("/data/filtered_artists.json").then(response => {
     const uniqueGenres = new Set();
 
     artistsData.forEach(artist => {
-      console.log(artist);      
       artist.genres.forEach(genre => uniqueGenres.add(genre));
     });
   
@@ -37,7 +36,6 @@ fetch("/data/filtered_artists.json").then(response => {
         .map(genre => {
             const artists = getArtistsByGenre(genre); // Get artists for the genre            
             if(artists.length>0){
-              console.log(artists[0]);
             }
             
             return artists.length > 0 // Only include genres with artists
