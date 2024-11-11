@@ -5,7 +5,7 @@ let selectedGenre;
 async function loadData() {
     try {
         const [genresResponse, worldMapResponse] = await Promise.all([
-            fetch('./genres.json'),
+            fetch('/data/genres.json'),
             fetch('https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world.geojson')
         ]);
 

@@ -19,7 +19,7 @@ const partition = d3.partition()
     .size([2 * Math.PI, radius]);
 
 // Fetch the data and process it to group albums by country.
-fetch('data/updated_album.json')
+fetch('/data/updated_album.json')
     .then(response => response.json())
     .then(data => {
         const limitedAlbums = data.slice(0, 4000);
