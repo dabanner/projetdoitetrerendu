@@ -25,7 +25,6 @@ def add_albums_to_artists(artists, albums):
         # Find albums that belong to the artist
         artist_albums = [album['title'] for album in albums if album['name'] == artist['name']]
         artist['albums'] = artist_albums  # Add albums to artist data
-        print(artist)
 
 # Filter artists without members
 filtered_artists = filter_artists(artists_data)
@@ -41,7 +40,7 @@ output_data = {
 }
 
 # Save the result to a new JSON file
-with open('filtered_artists_py.json', 'w') as f:
+with open('../data/filtered_artists.json', 'w') as f:
     json.dump(output_data, f, indent=4)
 
 print("Filtered artists data has been saved to 'filtered_artists.json'.")
