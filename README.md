@@ -10,7 +10,7 @@ after that, you could run the prepare_data script to filter out all data we need
 chmod +x prepare_data.sh
 ./prepare_data.sh
 ```
-Then, please wait until the script is finished, it should run about 5 python scripts which takes around 5 minutes on a 2-core machine. After all data is done being filtered you can proceed by installing dependencies and starting the project.
+Then, please wait until the script is finished, it should run about 5 python scripts which takes around 10 minutes on a 2-core machine. After all data is done being filtered you can proceed by installing dependencies and starting the project.
 
 ```bash
 npm i

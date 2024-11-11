@@ -9,17 +9,18 @@ genres_data = {}
 
 # Iterate over each artist in the original data
 for artist in data:
-    # Iterate over each genre for the current artist
-    for genre in artist['genres']:
-        # If the genre is not already in the genres_data dictionary, add it
-        if genre not in genres_data:
-            genres_data[genre] = []
-        # Add the artist's name and location to the genre's list of artists
-        genres_data[genre].append({
-            'name': artist['name'],
-            #Only add city and "," if city is not empty
-            'location': artist['location']['country']
-        })
+    # Check if the location is empty
+    if artist['location']['country']:
+        # Iterate over each genre for the current artist
+        for genre in artist['genres']:
+            # If the genre is not already in the genres_data dictionary, add it
+            if genre not in genres_data:
+                genres_data[genre] = []
+            # Add the artist's name and location to the genre's list of artists
+            genres_data[genre].append({
+                'name': artist['name'],
+                'location': artist['location']['country']
+            })
 
 # Convert the genres_data dictionary to a list of genres
 genres = []
