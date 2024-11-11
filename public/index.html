@@ -1,102 +1,56 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>D3.js Bar Chart Example</title>
-    <script src="https://d3js.org/d3.v7.min.js"></script>
-    <style>
-        .bar {
-            fill: steelblue;
-        }
-        .bar:hover {
-            fill: orange;
-        }
-        .axis-label {
-            font-size: 14px;
-        }
-    </style>
+    <title>Information Visualization Project</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
-    <h1>Language Data Bar Chart</h1>
-    <svg width="600" height="400"></svg>
-
-    <script>
-        // Fetch data from the Express API using d3.json
-        d3.json('/api/data')
-            .then(data => {
-                console.log(data); // Log the data to the console
-
-                // Set up dimensions for the SVG and chart
-                const width = 600;
-                const height = 400;
-                const margin = { top: 40, right: 20, bottom: 50, left: 60 };
-
-                const svg = d3.select("svg")
-                    .attr("width", width)
-                    .attr("height", height);
-
-                const chartWidth = width - margin.left - margin.right;
-                const chartHeight = height - margin.top - margin.bottom;
-
-                const chart = svg.append("g")
-                    .attr("transform", `translate(${margin.left}, ${margin.top})`);
-
-                // Set up scales
-                const x = d3.scaleBand()
-                    .domain(data.map(d => d._id))  // Map languages to the x-axis
-                    .range([0, chartWidth])
-                    .padding(0.2);
-
-                const y = d3.scaleLinear()
-                    .domain([0, d3.max(data, d => d.sum)])  // Scale the y-axis based on the sum
-                    .nice()  // Rounds the domain
-                    .range([chartHeight, 0]);
-
-                // Create x-axis and y-axis
-                const xAxis = d3.axisBottom(x);
-                const yAxis = d3.axisLeft(y);
-
-                chart.append("g")
-                    .attr("transform", `translate(0, ${chartHeight})`)
-                    .call(xAxis)
-                    .selectAll("text")
-                    .attr("transform", "rotate(-45)")
-                    .style("text-anchor", "end");
-
-                chart.append("g")
-                    .call(yAxis);
-
-                // Create the bars for the bar chart
-                chart.selectAll(".bar")
-                    .data(data)
-                    .enter()
-                    .append("rect")
-                    .attr("class", "bar")
-                    .attr("x", d => x(d._id))  // Position bars according to the language
-                    .attr("y", d => y(d.sum))  // The top of the bar
-                    .attr("width", x.bandwidth())  // Width based on the x scale
-                    .attr("height", d => chartHeight - y(d.sum));  // Height based on sum
-
-                // Add axis labels
-                svg.append("text")
-                    .attr("class", "axis-label")
-                    .attr("x", width / 2)
-                    .attr("y", height - 10)
-                    .style("text-anchor", "middle")
-                    .text("Languages");
-
-                svg.append("text")
-                    .attr("class", "axis-label")
-                    .attr("x", -height / 2)
-                    .attr("y", 20)
-                    .attr("transform", "rotate(-90)")
-                    .style("text-anchor", "middle")
-                    .text("Sum of Values");
-            })
-            .catch(error => {
-                console.error('Error fetching data:', error);
-            });
-    </script>
+    <header>
+        <h1>Welcome to Our Information Visualization Project</h1>
+    </header>
+    <main>
+        <section class="team-members">
+            <h2>Our Team</h2>
+            <ul>
+                <li>Anas Chhilif</li>
+                <li>Saad Beidouri</li>
+                <li>Brahim Akhyate</li>
+                <li>Sarra Zenkri</li>
+                <li>Jamal Eddine El Betioui</li>
+                <li>Marcus Aas Jensen</li>
+            </ul>
+        </section>
+        <section class="visualization-links">
+            <h2>Visualizations</h2>
+            <div class="link-grid">
+                <a href="/sunburst" class="viz-link">
+                    <div class="viz-box">Sunburst Chart</div>
+                </a>
+                <a href="/map" class="viz-link">
+                    <div class="viz-box">Map Chart</div>
+                </a>
+                <a href="/tidy_tree" class="viz-link">
+                    <div class="viz-box">Tidy Tree</div>
+                </a>
+                <a href="/scatter" class="viz-link">
+                    <div class="viz-box">Scatter Plot</div>
+                </a>
+                <a href="/treemap" class="viz-link">
+                    <div class="viz-box">Treemap</div>
+                </a>
+                <a href="#" class="viz-link">
+                    <div class="viz-box">Coming Soon</div>
+                </a>
+            </div>
+        </section>
+    </main>
+    <footer>
+        <p>&copy; 2024 Information Visualization Project. All rights reserved.</p>
+    </footer>
 </body>
+
 </html>
