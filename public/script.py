@@ -1,57 +1,43 @@
 import json
-import os
-from pathlib import Path
 
-def preview_json_file(file_path, num_records=2):
-    """
-    Read and preview a JSON file, showing its structure and first few records.
+def peek_large_json(file_path, num_samples=5):
+    print(f"Peeking into {file_path}...")
     
-    Args:
-        file_path (str): Path to the JSON file
-        num_records (int): Number of records to preview
-    """
-    try:
-        with open(file_path, 'r', encoding='utf-8') as f:
-            data = json.load(f)
-            
-        print(f"\n{'='*50}")
-        print(f"File: {os.path.basename(file_path)}")
-        print(f"{'='*50}")
+    samples = []
+    current_object = ""
+    object_count = 0
+    samples_collected = 0
+    
+    with open(file_path, 'r', encoding='utf-8') as f:
+        # Skip the initial [
+        f.read(1)
         
-        if isinstance(data, list):
-            print(f"Type: List of {len(data)} records")
-            print("\nFirst {num_records} records:")
-            for i, record in enumerate(data[:num_records]):
-                print(f"\nRecord {i+1}:")
-                print(json.dumps(record, indent=2))
-        elif isinstance(data, dict):
-            print("Type: Dictionary")
-            print("\nTop-level keys:", list(data.keys()))
-            print("\nSample of content:")
-            print(json.dumps(dict(list(data.items())[:num_records]), indent=2))
+        for line in f:
+            current_object += line
             
-    except Exception as e:
-        print(f"Error reading {file_path}: {str(e)}")
-
-def main():
-    # List of JSON files to analyze
-    json_files = [
-        'album.json',
-        'artist-members.json',
-        'artist-without-members.json',
-        'emotion-tags.json',
-        'social-tags.json',
-        'song.json',
-        'song-topic.json',
-        'topic-models.json'
-    ]
+            if "}" in line:  # Potential end of an object
+                try:
+                    # Try to parse the accumulated object
+                    json_obj = json.loads(current_object.rstrip(","))
+                    if samples_collected < num_samples:
+                        samples.append(json_obj)
+                        samples_collected += 1
+                    
+                    object_count += 1
+                    if samples_collected >= num_samples:
+                        break
+                        
+                    current_object = ""
+                except json.JSONDecodeError:
+                    continue
     
-    # Assuming files are in a 'data' subdirectory
-    data_dir = Path('./data')
+    print(f"\nTotal objects processed before sampling: {object_count}")
+    print(f"Sample of {len(samples)} objects:\n")
     
-    for file_name in json_files:
-        file_path = data_dir / file_name
-        preview_json_file(file_path)
+    for i, sample in enumerate(samples, 1):
+        print(f"Sample {i}:")
+        print(json.dumps(sample, indent=2))
+        print("-" * 80)
 
 if __name__ == "__main__":
-    main()
+    peek_large_json('./data/song.json')

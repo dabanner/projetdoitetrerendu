@@ -1,127 +1,190 @@
 // Configuration
 const width = 1000;
 const height = 600;
-const padding = 10;
+const DATA_LIMIT = 200;
 
-// Color scale
-const colorScale = {
-    'Rock': '#2C3E50',
-    'Pop': '#E74C3C',
-    'Alternative Rock': '#3498DB',
-    'Electronic': '#27AE60',
-    'Classical': '#F1C40F',
-    'Jazz': '#9B59B6',
-    'Other': '#95A5A6'
-};
-
-// Select DOM elements
 const canvas = d3.select('#canvas');
 const tooltip = d3.select('#tooltip');
 
-// Main drawing function
+const emotionColors = {
+    'happy': '#FFD93D',
+    'mellow': '#6B4423',
+    'sad': '#95A5A6',
+    'party': '#FF6B6B',
+    'energetic': '#FF8E00',
+    'relaxed': '#4ECDC4',
+    'dark': '#2C3E50',
+    'peaceful': '#9BD7D1',
+    'angry': '#E74C3C',
+    'romantic': '#FF7C7C'
+};
+
+const processData = (emotions, albums) => {
+    console.log(`Processing ${emotions.length} emotions and ${albums.length} albums`);
+
+    // Filter out entries without emotions
+    const validEmotions = emotions.filter(entry => 
+        entry.emotions && 
+        Array.isArray(entry.emotions) && 
+        entry.emotions.length > 0 &&
+        entry.song_id &&
+        entry.song_id.$oid
+    );
+
+    console.log(`Found ${validEmotions.length} valid emotion entries`);
+
+    // Create album lookup map
+    const albumMap = new Map();
+    albums.forEach(album => {
+        if (album._id && album._id.$oid) {
+            albumMap.set(album._id.$oid, {
+                title: album.title || 'Unknown Title',
+                genre: album.genre || 'Unclassified',
+                artist: album.name || 'Unknown Artist'
+            });
+        }
+    });
+
+    console.log(`Created album map with ${albumMap.size} entries`);
+
+    // Group by emotions
+    const emotionGroups = {};
+
+    validEmotions.slice(0, DATA_LIMIT).forEach(entry => {
+        entry.emotions.forEach(emotion => {
+            if (!emotion.emotion_tag || emotion.nbr_tags <= 0) return;
+
+            const emotionTag = emotion.emotion_tag;
+            if (!emotionGroups[emotionTag]) {
+                emotionGroups[emotionTag] = {
+                    name: emotionTag,
+                    children: []
+                };
+            }
+
+            const albumInfo = albumMap.get(entry.song_id.$oid);
+            if (!albumInfo) return;
+
+            emotionGroups[emotionTag].children.push({
+                name: albumInfo.title,
+                value: emotion.nbr_tags,
+                genre: albumInfo.genre,
+                artist: albumInfo.artist
+            });
+        });
+    });
+
+    // Convert to array and sort by number of songs
+    const emotionArray = Object.values(emotionGroups)
+        .filter(emotion => emotion.children.length > 0)
+        .sort((a, b) => b.children.length - a.children.length);
+
+    console.log('Emotion groups created:', emotionArray.map(e => ({
+        emotion: e.name,
+        songs: e.children.length
+    })));
+
+    return {
+        name: "Music Emotions",
+        children: emotionArray
+    };
+};
+
 const drawTreeMap = (data) => {
-    // Create hierarchy
-    const hierarchy = d3.hierarchy(data)
-        .sum(d => d.value)
+    console.log('Drawing treemap with data:', data);
+
+    // Clear existing content
+    canvas.selectAll("*").remove();
+
+    const root = d3.hierarchy(data)
+        .sum(d => d.value || 0)
         .sort((a, b) => b.value - a.value);
 
-    // Create treemap layout
-    const createTreeMap = d3.treemap()
+    console.log('Hierarchy created with', root.descendants().length, 'nodes');
+
+    const treemap = d3.treemap()
         .size([width, height])
-        .padding(1);
+        .paddingTop(15)
+        .paddingRight(2)
+        .paddingBottom(2)
+        .paddingLeft(2);
 
-    createTreeMap(hierarchy);
+    treemap(root);
 
-    // Get all leaf nodes
-    const tiles = hierarchy.leaves();
-
-    // Create groups for each tile
-    const block = canvas.selectAll('g')
-        .data(tiles)
+    // Create cells
+    const cell = canvas.selectAll('g')
+        .data(root.descendants())
         .enter()
         .append('g')
         .attr('transform', d => `translate(${d.x0},${d.y0})`);
 
     // Add rectangles
-    block.append('rect')
-        .attr('class', 'tile')
+    cell.append('rect')
+        .attr('width', d => Math.max(0, d.x1 - d.x0))
+        .attr('height', d => Math.max(0, d.y1 - d.y0))
         .attr('fill', d => {
-            const genre = d.data.genre || 'Other';
-            return colorScale[genre] || colorScale['Other'];
+            if (d.depth === 0) return '#fff';
+            if (d.depth === 1) return emotionColors[d.data.name] || '#ccc';
+            return d3.color(emotionColors[d.parent.data.name]).brighter(0.35);
         })
-        .attr('width', d => d.x1 - d.x0)
-        .attr('height', d => d.y1 - d.y0)
-        .attr('data-name', d => d.data.name)
-        .attr('data-value', d => d.value)
-        .on('mouseover', (event, d) => {
-            tooltip.transition()
-                .style('visibility', 'visible');
-            
-            tooltip.html(`
-                <strong>${d.data.name}</strong><br>
-                Artist: ${d.data.artist || 'Unknown'}<br>
-                Fans: ${d.value.toLocaleString()}<br>
-                Genre: ${d.data.genre || 'Unknown'}
-            `);
-            
-            tooltip.attr('data-value', d.value);
-        })
-        .on('mouseout', () => {
-            tooltip.transition()
-                .style('visibility', 'hidden');
-        });
+        .attr('stroke', '#fff')
+        .attr('stroke-width', 1)
+        .attr('class', 'tile');
 
     // Add text labels
-    block.append('text')
+    cell.append('text')
+        .filter(d => d.depth > 0)
         .attr('class', 'tile-text')
-        .selectAll('tspan')
-        .data(d => d.data.name.split(/(?=[A-Z][^A-Z])/g))
-        .enter()
-        .append('tspan')
         .attr('x', 4)
-        .attr('y', (d, i) => 13 + i * 10)
-        .text(d => d);
-};
-
-// Process the album data into a hierarchical structure
-const processData = (albums) => {
-    // Group by genre first
-    const genreGroups = {};
-    
-    albums.forEach(album => {
-        const genre = album.genre || 'Other';
-        if (!genreGroups[genre]) {
-            genreGroups[genre] = [];
-        }
-        genreGroups[genre].push({
-            name: album.title,
-            artist: album.name,
-            genre: genre,
-            value: album.deezerFans || 1,
-            cover: album.cover
+        .attr('y', 13)
+        .text(d => {
+            const width = d.x1 - d.x0;
+            const height = d.y1 - d.y0;
+            if (width < 40 || height < 20) return '';
+            return d.data.name;
         });
-    });
 
-    // Create hierarchical structure
-    return {
-        name: "Albums",
-        children: Object.entries(genreGroups).map(([genre, albums]) => ({
-            name: genre,
-            children: albums
-        }))
-    };
+    // Add tooltips
+    cell.on('mouseover', (event, d) => {
+        if (d.depth === 0) return;
+
+        tooltip.transition()
+            .style('visibility', 'visible');
+
+        const content = d.depth === 1 
+            ? `<strong>Emotion: ${d.data.name}</strong><br>Songs: ${d.children?.length || 0}`
+            : `<strong>${d.data.name}</strong><br>
+               Artist: ${d.data.artist}<br>
+               Genre: ${d.data.genre}<br>
+               Emotion Strength: ${d.data.value}`;
+
+        tooltip.html(content);
+    })
+    .on('mouseout', () => {
+        tooltip.transition()
+            .style('visibility', 'hidden');
+    });
 };
 
-// Load data
-fetch('../data/album.json')
-    .then(response => response.json())
-    .then(albums => {
-        console.log('Loaded albums:', albums.length);
-        const hierarchicalData = processData(albums);
-        console.log('Processed data:', hierarchicalData);
+// Initialize visualization
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('Loading data...');
+
+    Promise.all([
+        fetch('/data/emotion-tags.json').then(res => res.json()),
+        fetch('/data/album.json').then(res => res.json())
+    ])
+    .then(([emotions, albums]) => {
+        console.log('Data loaded:', {
+            emotions: emotions.length,
+            albums: albums.length
+        });
+
+        const hierarchicalData = processData(emotions, albums);
         drawTreeMap(hierarchicalData);
     })
     .catch(error => {
-        console.error('Error loading data:', error);
+        console.error('Error:', error);
         document.getElementById('title').textContent = 'Error loading data. Check console for details.';
     });
+});
