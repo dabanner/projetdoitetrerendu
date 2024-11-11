@@ -22,10 +22,9 @@ const partition = d3.partition()
 fetch('/data/updated_album.json')
     .then(response => response.json())
     .then(data => {
-        const limitedAlbums = data.slice(0, 4000);
 
         // Group the limited albums by country, assigning "Unknown" for empty or undefined countries.
-        const albumsByCountry = d3.group(limitedAlbums, d => d.country || "Unknown");
+        const albumsByCountry = d3.group(data, d => d.country || "Unknown");
 
         // Sort countries by name
         const sortedCountries = Array.from(albumsByCountry.keys()).sort();

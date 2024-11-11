@@ -28,20 +28,35 @@ def update_country_codes(input_file, output_file):
     with open(input_file, 'r') as f:
         data = json.load(f)
 
+    updated_data = []
+
     # Iterate over each entry and update the country code to the full country name
     for entry in data:
-        country_code = entry.get('country')
+        # Extract only the relevant attributes
+        album_info = {
+            'title': entry.get('title'),
+            'name': entry.get('name'),
+            'deezerFans': entry.get('deezerFans', 0),  # Default to 0 if not available
+            'country': entry.get('country'),
+            'cover': entry.get('cover')
+        }
+
+        # Update the country code to the full country name
+        country_code = album_info['country']
         if not country_code or country_code not in country_map:
-            entry['country'] = 'Unknown'
+            album_info['country'] = 'Unknown'
         else:
-            entry['country'] = country_map[country_code]
+            album_info['country'] = country_map[country_code]
+
+        # Append the filtered and updated album info to the result list
+        updated_data.append(album_info)
 
     # Write the updated data back to a new JSON file
     with open(output_file, 'w') as f:
-        json.dump(data, f, indent=4)
+        json.dump(updated_data, f, indent=4)
 
 if __name__ == "__main__":
-    input_file = '../../../data/json/album.json'
-    output_file = 'updated_album.json'
+    input_file = '../data/album.json'  # Update the path as needed
+    output_file = '../data/updated_album.json'
     update_country_codes(input_file, output_file)
     print(f"Updated JSON has been saved to {output_file}")
