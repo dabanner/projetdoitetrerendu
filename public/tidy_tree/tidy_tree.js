@@ -1,5 +1,5 @@
 Promise.all([
-    fetch("/data/filtered_artists.json").then(response => {
+    fetch("/data/genres-artists-albums.json").then(response => {
         if (!response.ok) {
             throw new Error("Network response was not ok");
         }
