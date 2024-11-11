@@ -1,18 +1,10 @@
-Promise.all([
-  fetch("/data/filtered_artists.json").then(response => {
-    if (!response.ok) {
-      throw new Error("Network response was not ok");
-    }
-    return response.json();
-  }),
-  fetch("/data/album.json").then(response => {
-    if (!response.ok) {
-      throw new Error("Network response was not ok");
-    }
-    return response.json();
-  })
-])
-.then(([artistsData, albumsData]) => {
+fetch("/data/filtered_artists.json").then(response => {
+  if (!response.ok) {
+    throw new Error("Network response was not ok");
+  }
+  return response.json();
+})
+.then((artistsData) => {
     artistsData = artistsData.artists
     // Function to get artists by genre
     function getArtistsByGenre(genre) {
