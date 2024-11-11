@@ -27,6 +27,8 @@ run_python_script() {
     echo "The function took $runtime seconds to run."
 }
 
+cp genres-marcus.json public/data/
+
 # Call the function with a path as an argument
 echo "Preparing map data"
 run_python_script "./public/map"

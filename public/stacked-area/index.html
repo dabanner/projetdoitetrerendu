@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stacked Area Chart</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        svg {
+            font-family: sans-serif;
+        }
+
+        .axis path,
+        .axis line {
+            fill: none;
+            shape-rendering: crispEdges;
+        }
+
+        .tooltip {
+            position: absolute;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 5px;
+            border-radius: 5px;
+            display: none;
+            pointer-events: none;
+        }
+    </style>
+</head>
+
+<body>
+    <svg width="800" height="400"></svg>
+    <script src="StackedAreaData.js"></script>
+    <script src="StackedAreaGraph.js"></script>
+    <script src="StackedArea.js"></script>
+</body>
+
+</html>
