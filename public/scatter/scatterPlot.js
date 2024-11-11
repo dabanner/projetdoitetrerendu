@@ -61,7 +61,7 @@ d3.json("/data/processed_data.json").then(data => {
         .attr("x", -height / 2)
         .attr("y", -margin.left + 20)
         .style("text-anchor", "middle")
-        .text("Popularité");
+        .text("Popularity");
 
     // Ajouter les points de données avec couleur en fonction du genre
     svg.selectAll(".point")
@@ -104,7 +104,7 @@ d3.json("/data/processed_data.json").then(data => {
                 .property("checked", d3.select("#selectAll").property("checked"));
             updateChart();
         });
-    label.append("span").text("Toutes les années");
+    label.append("span").text("Select All Years");
 
     yearRanges.forEach(range => {
         const label = checkboxContainer.append("label");
@@ -125,7 +125,7 @@ d3.json("/data/processed_data.json").then(data => {
         .attr("x", 0)
         .attr("y", -10) // Ajuster la position verticale si nécessaire
         .style("font-weight", "bold")
-        .text("Légende des genres");
+        .text("Genres");
 
     genres.forEach((genre, i) => {
         const legendRow = legend.append("g")
