@@ -60,10 +60,12 @@ function drawMap() {
 
     const path = d3.geoPath().projection(projection);
 
-    // Adjust color scale for more pronounced differences
+    // Adjust color scale for consistent, pronounced differences
     const colorScale = d3.scaleSequential(d3.interpolateYlOrRd)
-        .domain([0, Math.max(1, d3.max(Object.values(artistDistribution)))])
+        .domain([0, 1])  // Fixed domain from 0 to 1
         .clamp(true);
+
+    const maxArtists = Math.max(1, d3.max(Object.values(artistDistribution)));
 
     svg.selectAll('.country')
         .data(worldMap.features)
@@ -73,7 +75,7 @@ function drawMap() {
         .style('fill', d => {
             const countryName = d.properties.name;
             const artistCount = artistDistribution[countryName] || 0;
-            return colorScale(Math.pow(artistCount, 0.5)); // Use square root scale for more pronounced differences
+            return colorScale(artistCount / maxArtists); // Normalize the artist count
         });
 
     const tooltip = d3.select('body').append('div')
@@ -116,10 +118,10 @@ function drawMap() {
         .attr('y2', '0%');
 
     legendGradient.selectAll('stop')
-        .data(colorScale.ticks().map((t, i, n) => ({ offset: `${100 * i / n.length}%`, color: colorScale(Math.pow(t, 0.5)) })))
+        .data(d3.range(0, 1.1, 0.1))
         .enter().append('stop')
-        .attr('offset', d => d.offset)
-        .attr('stop-color', d => d.color);
+        .attr('offset', d => `${d * 100}%`)
+        .attr('stop-color', d => colorScale(d));
 
     legend.append('rect')
         .attr('width', legendWidth)
