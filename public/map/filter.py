@@ -1,7 +1,7 @@
 import json
 
 # Load the original JSON data
-with open('./data/json/artist-without-members.json', 'r') as f:
+with open('../data/artist-without-members.json', 'r') as f:
     data = json.load(f)
 
 # Initialize an empty dictionary to hold the genres data
@@ -30,5 +30,5 @@ for genre, artists in genres_data.items():
     })
 
 # Write the genres list to a new JSON file
-with open('genres.json', 'w') as f:
+with open('../data/genres.json', 'w') as f:
     json.dump(genres, f)
