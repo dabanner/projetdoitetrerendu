@@ -1,7 +1,7 @@
 // Configuration du graphique
 const width = 900;
 const height = 600;
-const margin = { top: 20, right: 200, bottom: 70, left: 70 }; // Augmenter le margin droit pour la légende
+const margin = { top: 20, right: 200, bottom: 70, left: 70 };
 
 // Création du canevas SVG pour le graphique D3
 const svg = d3.select("#scatter-plot")
@@ -31,10 +31,12 @@ d3.json("/data/processed_data.json").then(data => {
         d.popularity = +d.popularity;
     });
 
-    // Seuls les genres non vides seront ajoutés au tableau genres.
-    // Les genres vides ou non définis seront simplement ignorés.
     const genres = Array.from(new Set(data.flatMap(d => d.genre ? [d.genre] : [])));
-    const genreColor = d3.scaleOrdinal(d3.schemeCategory10).domain(genres);
+
+    // Générer une palette de couleurs unique
+    const genreColor = d3.scaleOrdinal()
+       .domain(genres)
+       .range(genres.map((d, i) => d3.interpolateRainbow(i / 33)));
 
     // Définition des échelles
     const xScale = d3.scaleLinear().domain([1920, 2024]).range([0, width]);
@@ -44,8 +46,8 @@ d3.json("/data/processed_data.json").then(data => {
     const xAxis = d3.axisBottom(xScale).tickFormat(d3.format("d"));
     const yAxis = d3.axisLeft(yScale);
 
-    svg.append("g").attr("transform", `translate(0,${height})`).call(xAxis);
-    svg.append("g").call(yAxis);
+    svg.append("g").attr("transform", `translate(0,${height})`).attr("class", "x-axis").call(xAxis);
+    svg.append("g").attr("class", "y-axis").call(yAxis);
 
     // Ajouter les labels des axes
     svg.append("text")
@@ -53,7 +55,7 @@ d3.json("/data/processed_data.json").then(data => {
         .attr("x", width / 2)
         .attr("y", height + margin.bottom - 30)
         .style("text-anchor", "middle")
-        .text("Année de sortie");
+        .text("Release Year");
 
     svg.append("text")
         .attr("class", "axis-label")
@@ -73,24 +75,64 @@ d3.json("/data/processed_data.json").then(data => {
         .attr("cy", d => yScale(d.popularity))
         .attr("r", 4)
         .style("fill", d => genreColor(d.genre[0]))
-        .style("display", "none") // Masquer les points au départ
-
+        .style("display", "none");
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Fonction de mise à jour du graphique
-    function updateChart() {
-        const selectedRanges = yearRanges.filter((_, i) =>
-            checkboxContainer.selectAll("input").nodes()[i].checked
-        );
+// Fonction de mise à jour du graphique
+function updateChart() {
+    const selectedRanges = yearRanges.filter((_, i) =>
+        checkboxContainer.selectAll("input").nodes()[i].checked
+    );
 
-        svg.selectAll(".point")
-            .style("display", d =>
-                selectedRanges.some(range => {
-                    const [min, max] = range.split("-").map(Number);
-                    return d.year >= min && d.year <= max;
-                }) ? "block" : "none"
-            );
+    // Réinitialiser la plage d'années par défaut si aucune case n'est cochée
+    if (selectedRanges.length === 0) {
+        xScale.domain([1920, 2024]);
+    } else {
+        const yearsSelected = selectedRanges.flatMap(range => {
+            const [min, max] = range.split("-").map(Number);
+            return [min, max];
+        });
+
+        // Calculer la plage minimale et maximale des années sélectionnées
+        var xMin = (d3.min(yearsSelected) - 10);
+        var xMax = (d3.max(yearsSelected) - 10);
+        if (xMax == 2014) { xMax = 2024; }
+
+        // Mettre à jour l'échelle de xScale
+        xScale.domain([xMin, xMax]);
     }
 
-    // Ajout des cases à cocher pour chaque plage d'années (désactivées par défaut)
+    // Extraire les données filtrées par plage d'années sélectionnée
+    const filteredData = data.filter(d =>
+        selectedRanges.some(range => {
+            const [min, max] = range.split("-").map(Number);
+            return d.year >= min && d.year <= max;
+        })
+    );
+
+    // Calculer la plage min et max pour la popularité dans les données filtrées
+    const yMin = d3.min(filteredData, d => d.popularity);
+    const yMax = d3.max(filteredData, d => d.popularity);
+
+    // Mettre à jour l'échelle de yScale en fonction des nouvelles valeurs min et max
+    yScale.domain([0, yMax]);
+
+    // Redessiner les axes avec les nouvelles échelles
+    svg.select(".x-axis").transition().duration(500).call(xAxis);
+    svg.select(".y-axis").transition().duration(500).call(yAxis);
+
+    // Afficher ou masquer les points en fonction des plages d'années sélectionnées
+    svg.selectAll(".point")
+        .style("display", d =>
+            selectedRanges.some(range => {
+                const [min, max] = range.split("-").map(Number);
+                return d.year >= min && d.year <= max;
+            }) ? "block" : "none"
+        );
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////        
+    // Ajout des cases à cocher pour chaque plage d'années
     const checkboxContainer = d3.select("#checkboxes");
 
     // Ajout de la case à cocher "Toutes les années" en haut
@@ -111,7 +153,7 @@ d3.json("/data/processed_data.json").then(data => {
         label.append("input")
             .attr("type", "checkbox")
             .attr("value", range)
-            .property("checked", false) // Désactivé par défaut
+            .property("checked", false)
             .style("margin-left", "25px")
             .on("change", updateChart);
         label.append("span").text(range);
@@ -119,11 +161,11 @@ d3.json("/data/processed_data.json").then(data => {
 
     // Ajouter la légende des genres à droite du graphique
     const legend = svg.append("g")
-        .attr("transform", `translate(${width + 20}, 20)`); // Positionner à droite du graphique
-    // Ajouter le titre de la légende
+        .attr("transform", `translate(${width + 20}, 20)`);
+
     legend.append("text")
         .attr("x", 0)
-        .attr("y", -10) // Ajuster la position verticale si nécessaire
+        .attr("y", -10)
         .style("font-weight", "bold")
         .text("Genres");
 
@@ -131,23 +173,19 @@ d3.json("/data/processed_data.json").then(data => {
         const legendRow = legend.append("g")
             .attr("transform", `translate(0, ${i * 20})`);
 
-        // Définir la taille des carrés à 12x12
         legendRow.append("rect")
-            .attr("x", 20) // Positionner le texte à droite du carré
+            .attr("x", 20)
             .attr("width", 12)
             .attr("height", 12)
             .attr("fill", genreColor(genre));
 
-        // Définir la taille de la police
         legendRow.append("text")
-            .attr("x", 36) // Positionner le texte à droite du carré
-            .attr("y", 6) // Centrer verticalement avec le carré
+            .attr("x", 36)
+            .attr("y", 6)
             .attr("dy", ".35em")
-            .style("font-size", "12px") // Taille de la police réduite
+            .style("font-size", "12px")
             .style("text-anchor", "start")
             .text(genre);
-
     });
-
 
 }).catch(error => console.error("Erreur lors du chargement des données :", error));
